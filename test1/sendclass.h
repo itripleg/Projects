@@ -10,9 +10,8 @@ class sendClass : QObject
 {
         Q_OBJECT
 
-public:
+private:
     sendClass(); //constructor
-    void prep();
 
 private:
      static QUdpSocket *sendSocket; //socket for connection
@@ -23,7 +22,7 @@ private:
      static QByteArray datagram2;
      static QByteArray datagram3;
 
-public slots:
+public:
      static void sendingData(){
          if(sendClass::sendSocket->writeDatagram(datagram,groupAddress,port)<0){
              qDebug() << "error writing";         };
@@ -35,8 +34,6 @@ public slots:
                   qDebug() << "error writing";         };
               qDebug() << "sendingData() probe on port: "<< port2 <<endl;
           }
-
-
 };
 
 #endif //SENDCLASS_H

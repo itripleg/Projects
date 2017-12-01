@@ -10,8 +10,6 @@ receiver::receiver()
     qDebug() << "receivier object constructed " << endl;
     //TODO Need to create socket, join multicast group and listen for probe after
 
-
-
     address= QHostAddress("239.255.255.250");
     port=3702;
     port2=37020;
@@ -45,8 +43,29 @@ receiver::receiver()
     connect(socket, SIGNAL(readyRead()),
            this, SLOT(readingSocket()));
 
-    connect(socket2, SIGNAL(readyRead()),
-           this, SLOT(readingSocket()));
+
+//    while (1) {
+//        if(socket->hasPendingDatagrams()){
+//            //a buffer to store the receivied data
+//            receiver::datagram.resize(socket->pendingDatagramSize()); //set the datagram buffer to the size of the received datagram
+
+//            socket->readDatagram(datagram.data(),datagram.size(),&fromAddress); // fill the data buffer and set sender address
+//            qDebug()<<"datagram being received from" << fromAddress << "from port: " << fromPort << "to port :" << port;
+//        }
+
+//        else if(socket2->hasPendingDatagrams()){
+//        qDebug()<<"datagram being received on port: " << port2 << endl;
+//        receiver::datagram2.resize(socket2->pendingDatagramSize()); //set the datagram buffer to the size of the received datagram
+//        socket2->readDatagram(datagram2.data(),datagram2.size(),&fromAddress2); // fill the data buffer
+//        qDebug()<<"datagram being received from" << fromAddress2 << "from port: " << fromPort2 << "to port :" << port2;
+//        //qDebug() << datagram2 << endl;
+//        }
+//        else { Sleep(1000);
+
+//    parser parse1;
+//    parse1.ParseReceivedPacket(datagram);
+//    connect(socket2, SIGNAL(readyRead()),
+//           this, SLOT(readingSocket()));
 
     //readingSocket();
 }
