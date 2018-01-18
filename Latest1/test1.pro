@@ -27,14 +27,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    parser.cpp \
-    advanced.cpp
+    advanced.cpp \
+    discoverddevice.cpp
 
 HEADERS += \
         mainwindow.h \
-    parser.h \
-    advanced.h
+    advanced.h \
+    discoverddevice.h
 
 FORMS += \
     mainwindow.ui \
     advanced.ui
+
+RESOURCES += \
+    main.qrc

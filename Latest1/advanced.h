@@ -4,6 +4,9 @@
 #include <QProcess>
 #include <QWidget>
 #include <QDebug>
+#include <QThread>
+#include <QListWidgetItem>
+
 
 namespace Ui {
 class Advanced;
@@ -26,9 +29,16 @@ private slots:
     void on_pingBtn_clicked();
     void on_traceBtn_clicked();
     void on_ipConfigBtn_clicked();
+    void on_exeBtn_clicked();
+
+    void readTrace();
+    void finishedTrace();
 
 private:
+    QProcess* traceProcess;
     Ui::Advanced *ui;
+    QString buffer;
+    QListWidgetItem* currentItem;
 
 };
 

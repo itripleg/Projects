@@ -46,7 +46,7 @@
        <item>
         <widget class="QLineEdit" name="exeLine">
          <property name="text">
-          <string>192.168.86.1</string>
+          <string>coming soon</string>
          </property>
         </widget>
        </item>
