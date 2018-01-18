@@ -4,6 +4,10 @@
 #include <QUdpSocket>
 #include "advanced.h"
 #include <QDomDocument>
+#include <QPixmap>
+
+
+
 
 void delay(qint32 millisecondsToWait_arg)
 {
@@ -20,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     EnumerateLocalIps();
+
+    QPixmap pix(":/graphics/SCW_Icon_long.png");
+    ui->logo->setPixmap(pix);
 }
 
 MainWindow::~MainWindow()
@@ -44,23 +51,24 @@ void MainWindow::EnumerateLocalIps()
                 qDebug() << "ip=" << ips.at(j).ip().toString() << ", subnet=" << ips.at(j).netmask().toString();
             }
         }
-    }
+    }qDebug() << "done enumerating";
 }
-
-QByteArray probeDatagram = "<?xml version=\"1.0\" encoding=\"utf-8\"?><Probe><Uuid>E9D24483-3B71-4B66-8A27-CC67EE559678</Uuid><Types>inquiry</Types></Probe>";
-QByteArray probeDatagram2 ="<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:SOAP-ENC=\"http://www.w3.org/2003/05/soap-encoding\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\" xmlns:wsa=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:tns=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:dn=\"http://www.onvif.org/ver10/network/wsdl\" xmlns:wsa5=\"http://www.w3.org/2005/08/addressing\"><SOAP-ENV:Header><wsa:MessageID>urn:uuid:52C215CF-7734-4fec-AAEF-2613D6D44A03</wsa:MessageID><wsa:To SOAP-ENV:mustUnderstand=\"true\">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To><wsa:Action SOAP-ENV:mustUnderstand=\"true\">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action></SOAP-ENV:Header><SOAP-ENV:Body><tns:Probe><tns:Types>dn:NetworkVideoTransmitter</tns:Types></tns:Probe></SOAP-ENV:Body></SOAP-ENV:Envelope>";
 
 void MainWindow::Probe(QString ipArg, int portArg)
 {
-    QUdpSocket* psendSock = new QUdpSocket(this);
-    QHostAddress multicastAddress= QHostAddress("239.255.255.250");
 
     QUdpSocket* pSock = new QUdpSocket(this);
+    QUdpSocket* psendSock = new QUdpSocket(this);
+
     QHostAddress localAddress(ipArg);
     QByteArray receiveDatagram;
 
+    QHostAddress multicastAddress= QHostAddress("239.255.255.250");
+
+
     if(pSock->bind(localAddress, portArg, QUdpSocket::ReuseAddressHint  | QUdpSocket::ShareAddress)<0){
         qDebug() << "FAILED - local ip:" + ipArg + "bound on port:" + QString::number(portArg);
+        qDebug() << "Failed to bind";
         return;
     }
     qDebug() << "SUCCESS - local ip:" + ipArg + "bound on port:" + QString::number(portArg);
@@ -71,13 +79,40 @@ void MainWindow::Probe(QString ipArg, int portArg)
     }
     qDebug() << "SUCCESS - Joined multicast group:" + multicastAddress.toString();
 
-    psendSock->writeDatagram(probeDatagram, multicastAddress, portArg);
-    psendSock->writeDatagram(probeDatagram2, multicastAddress, portArg);
+        if(psendSock->bind(localAddress, portArg, QUdpSocket::ReuseAddressHint  | QUdpSocket::ShareAddress)<0){
+            qDebug() << "FAILED - local ip:" + ipArg + "bound on port:" + QString::number(portArg);
+            return;
+        }
+        qDebug() << "SUCCESS - local ip:" + ipArg + "bound on port:" + QString::number(portArg);
+
+        if(!psendSock->joinMulticastGroup(multicastAddress)){
+            qDebug() << "FAILED - Joining multicast group:" + multicastAddress.toString();
+            return;
+        }
+        qDebug() << "SUCCESS - Joined multicast group:" + multicastAddress.toString();
+
+
+
+    QByteArray probeDatagram = "<?xml version=\"1.0\" encoding=\"utf-8\"?><Probe><Uuid>304646F5-9268-42C3-9C6B-F83C3788C7CB</Uuid><Types>inquiry</Types></Probe>";
+    QByteArray probeDatagram2 ="<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:SOAP-ENC=\"http://www.w3.org/2003/05/soap-encoding\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\" xmlns:wsa=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:tns=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:dn=\"http://www.onvif.org/ver10/network/wsdl\" xlmns:tds=\"http://www.onvif.org/ver10/device/wsdl\" xmlns:wsa5=\"http://www.w3.org/2005/08/addressing\"><SOAP-ENV:Header><wsa:MessageID>urn:uuid:52C215CF-7734-4fec-AAEF-2613D6D44A03</wsa:MessageID><wsa:To SOAP-ENV:mustUnderstand=\"true\">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To><wsa:Action SOAP-ENV:mustUnderstand=\"true\">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action></SOAP-ENV:Header><SOAP-ENV:Body><tns:Probe><tns:Types>dn:NetworkVideoTransmitter tds:Device</tns:Types></tns:Probe></SOAP-ENV:Body></SOAP-ENV:Envelope>";
+    QByteArray probeDatagram3 ="<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:SOAP-ENC=\"http://www.w3.org/2003/05/soap-encoding\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\" xmlns:wsa=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:tns=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:dn=\"http://www.onvif.org/ver10/network/wsdl\" xmlns:wsa5=\"http://www.w3.org/2005/08/addressing\"><SOAP-ENV:Header><wsa:MessageID>urn:uuid:8AFEDF99-5A47-4b55-BFDC-80ECD4D5A55F</wsa:MessageID><wsa:To SOAP-ENV:mustUnderstand=\"true\">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To><wsa:Action SOAP-ENV:mustUnderstand=\"true\">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action></SOAP-ENV:Header><SOAP-ENV:Body><tns:UniviewProbe><tns:Types>dn:NetworkVideoTransmitter</tns:Types></tns:UniviewProbe></SOAP-ENV:Body></SOAP-ENV:Envelope>";
+
+    psendSock->writeDatagram(probeDatagram, multicastAddress, portArg);     //<<<<<< only finds hik equipment
+    psendSock->writeDatagram(probeDatagram2, multicastAddress, portArg);   //<<<<<< seems to find all uniview cams and NVRs
+    psendSock->writeDatagram(probeDatagram3, multicastAddress, portArg);    //<<<<<< finds some uniview stuff?
+
+
 
 
     QHostAddress fromAddress;
     quint16 fromPort=0;
-    for(int x=0; x < 100; ++x)
+
+    QByteArrayList allDataGrams;
+
+    //receiving loop//
+    int j;
+
+    for(int x=0; x < 20; ++x)
     {
         if(pSock->hasPendingDatagrams()) {
             //a buffer to store the receivied data
@@ -85,10 +120,30 @@ void MainWindow::Probe(QString ipArg, int portArg)
 
             pSock->readDatagram(receiveDatagram.data(), receiveDatagram.size(), &fromAddress, &fromPort); // fill the data buffer and set sender address
 
-            if(fromAddress == QHostAddress::LocalHost){qDebug() << "message from yourself";}
-
-            if(fromAddress != QHostAddress::LocalHost)
+            if (getDiscoveredDevice(fromAddress,portArg))
             {
+                continue;
+            }
+
+            DiscoverdDevice *device = new DiscoverdDevice;
+            device->address = fromAddress;
+            device->port = portArg;
+
+            devices.push_back(device);
+
+
+
+            //Ignore message from ourself
+            if (isLocalIp(fromAddress)){continue;}
+
+
+            if(allDataGrams.contains(receiveDatagram)){continue;}
+
+            j = ui->cameraInfo->rowCount();
+            ui->cameraInfo->insertRow(j);
+
+
+
             qDebug()<<"datagram being received from" << fromAddress << "from port: " << fromPort << "to port :" << portArg;
             qDebug()<< "message: " <<receiveDatagram << endl;
 
@@ -96,58 +151,65 @@ void MainWindow::Probe(QString ipArg, int portArg)
             dom.setContent(receiveDatagram);
             QDomElement docElement = dom.documentElement();
 
-
-            QDomNodeList list = dom.elementsByTagName("IPv4Address");
+            QDomNodeList list = dom.elementsByTagName("DeviceDescription");
             QDomElement element = list.at(0).toElement();
-            QTableWidgetItem *tableItem = new QTableWidgetItem(element.text());
+            QTableWidgetItem  *tableItem = new QTableWidgetItem(element.text());
             tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(x,1, tableItem);
+            ui->cameraInfo->setItem(j,0, tableItem);
+
+//            list = dom.elementsByTagName("IPv4Address");
+//            element = list.at(0).toElement();
+            tableItem = new QTableWidgetItem(fromAddress.toString());
+            tableItem->setTextAlignment(Qt::AlignCenter);
+            ui->cameraInfo->setItem(j,1,tableItem );
 
             list = dom.elementsByTagName("IPv4Gateway");
             element = list.at(0).toElement();
             tableItem = new QTableWidgetItem(element.text());
             tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(x,2, tableItem);
+            ui->cameraInfo->setItem(j,2, tableItem);
 
-            list = dom.elementsByTagName("DeviceDescription");
-            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(element.text());
+//            list = dom.elementsByTagName("HttpPort");
+//            element = list.at(0).toElement();
+            tableItem = new QTableWidgetItem(QString::number(fromPort));
             tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(x,0, tableItem);
-
-            list = dom.elementsByTagName("HttpPort");
-            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(element.text());
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(x,3, tableItem);
+            ui->cameraInfo->setItem(j,3, tableItem);
 
             list = dom.elementsByTagName("CommandPort");
             element = list.at(0).toElement();
             tableItem = new QTableWidgetItem(element.text());
             tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(x,4, tableItem);
+            ui->cameraInfo->setItem(j,4, tableItem);
 
             list = dom.elementsByTagName("DeviceSN");
             element = list.at(0).toElement();
             tableItem = new QTableWidgetItem(element.text());
             tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(x,5, tableItem);
-            }
+            ui->cameraInfo->setItem(j,5, tableItem);
 
+            list = dom.elementsByTagName("tns:XAddrs");
+            element = list.at(0).toElement();
+            tableItem = new QTableWidgetItem(element.text());
+            tableItem->setTextAlignment(Qt::AlignCenter);
+            ui->cameraInfo->setItem(j,6, tableItem);
 
-
+            allDataGrams.append(receiveDatagram);
         }
         else
         {
             delay(100);
-        }
+        }    
     }
-
     pSock->close();
+    psendSock->close();
+    qDebug() <<"Done"<< endl;
+    ui->total->setDigitCount(allDataGrams.count());
+
 }
 
 void MainWindow::on_searchButton_clicked()
 {
+   EnumerateLocalIps();
     //clearing out camera table, try to find a better way
     for(int i =0; i < 254; i++)
     {
@@ -168,7 +230,6 @@ void MainWindow::on_searchButton_clicked()
             Probe(ipEntries.at(j).ip().toString(), 37020);
         }
     }
-
 }
 
 //test to fill camera table
@@ -185,7 +246,7 @@ void MainWindow::on_applyButton_clicked()
         QTableWidgetItem *tablei = new QTableWidgetItem("test");
 
         ui->cameraInfo->setItem(i,5,tablei);
-    }
+    }EnumerateLocalIps();
 }
 
 void MainWindow::on_advancebtn_clicked()
@@ -193,4 +254,28 @@ void MainWindow::on_advancebtn_clicked()
     Advanced *advance = new Advanced;
     advance->show();
 
+}
+
+bool MainWindow::isLocalIp(QHostAddress address)
+{
+    for(int i =0; i < ipEntries.count(); i++)
+    {
+        if(ipEntries.at(i).ip().toString().compare(address.toString())==0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+DiscoverdDevice *MainWindow::getDiscoveredDevice(QHostAddress ip , int port)
+{
+    for(int i = 0 ; i < devices.count() ; i++)
+    {
+        if(devices.at(i)->address==ip && port == devices.at(i)->port)
+        {
+            return devices.at(i);
+        }
+    }
+    return 0;
 }
