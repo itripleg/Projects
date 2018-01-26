@@ -41,3 +41,8 @@ FORMS += \
 
 RESOURCES += \
     main.qrc
+
+win32: LIBS += -L$$PWD/../../../../Desktop/NetDEVSDK_Win32_V1.7.0.0_IN/lib/ -lNetDEVSDK
+
+INCLUDEPATH += $$PWD/../../../../Desktop/NetDEVSDK_Win32_V1.7.0.0_IN/include
+DEPENDPATH += $$PWD/../../../../Desktop/NetDEVSDK_Win32_V1.7.0.0_IN/include

@@ -7,7 +7,7 @@
 #include <QPixmap>
 
 
-
+void STDCALL discover(LPNETDEV_DISCOVERY_DEVINFO_S pstDevInfo, LPVOID lpUserData);
 
 void delay(qint32 millisecondsToWait_arg)
 {
@@ -24,6 +24,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     EnumerateLocalIps();
+
+    if (NETDEV_Init())
+    {
+        qDebug() << "Success" << endl;
+    }
 
     QPixmap pix(":/graphics/SCW_Icon_long.png");
     ui->logo->setPixmap(pix);
@@ -98,8 +103,8 @@ void MainWindow::Probe(QString ipArg, int portArg)
     QByteArray probeDatagram3 ="<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:SOAP-ENC=\"http://www.w3.org/2003/05/soap-encoding\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\" xmlns:wsa=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:tns=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:dn=\"http://www.onvif.org/ver10/network/wsdl\" xmlns:wsa5=\"http://www.w3.org/2005/08/addressing\"><SOAP-ENV:Header><wsa:MessageID>urn:uuid:8AFEDF99-5A47-4b55-BFDC-80ECD4D5A55F</wsa:MessageID><wsa:To SOAP-ENV:mustUnderstand=\"true\">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To><wsa:Action SOAP-ENV:mustUnderstand=\"true\">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</wsa:Action></SOAP-ENV:Header><SOAP-ENV:Body><tns:UniviewProbe><tns:Types>dn:NetworkVideoTransmitter</tns:Types></tns:UniviewProbe></SOAP-ENV:Body></SOAP-ENV:Envelope>";
 
     psendSock->writeDatagram(probeDatagram, multicastAddress, portArg);     //<<<<<< only finds hik equipment
-    psendSock->writeDatagram(probeDatagram2, multicastAddress, portArg);   //<<<<<< seems to find all uniview cams and NVRs
-    psendSock->writeDatagram(probeDatagram3, multicastAddress, portArg);    //<<<<<< finds some uniview stuff?
+//    psendSock->writeDatagram(probeDatagram2, multicastAddress, portArg);   //<<<<<< seems to find all uniview cams and NVRs
+//    psendSock->writeDatagram(probeDatagram3, multicastAddress, portArg);    //<<<<<< finds some uniview stuff?
 
 
 
@@ -109,8 +114,6 @@ void MainWindow::Probe(QString ipArg, int portArg)
 
     QByteArrayList allDataGrams;
 
-    //receiving loop//
-    int j;
 
     for(int x=0; x < 20; ++x)
     {
@@ -129,20 +132,10 @@ void MainWindow::Probe(QString ipArg, int portArg)
             device->address = fromAddress;
             device->port = portArg;
 
-            devices.push_back(device);
-
-
-
             //Ignore message from ourself
             if (isLocalIp(fromAddress)){continue;}
 
-
-            if(allDataGrams.contains(receiveDatagram)){continue;}
-
-            j = ui->cameraInfo->rowCount();
-            ui->cameraInfo->insertRow(j);
-
-
+//            if(allDataGrams.contains(receiveDatagram)){continue;}
 
             qDebug()<<"datagram being received from" << fromAddress << "from port: " << fromPort << "to port :" << portArg;
             qDebug()<< "message: " <<receiveDatagram << endl;
@@ -151,49 +144,25 @@ void MainWindow::Probe(QString ipArg, int portArg)
             dom.setContent(receiveDatagram);
             QDomElement docElement = dom.documentElement();
 
-            QDomNodeList list = dom.elementsByTagName("DeviceDescription");
-            QDomElement element = list.at(0).toElement();
-            QTableWidgetItem  *tableItem = new QTableWidgetItem(element.text());
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(j,0, tableItem);
+            QDomElement element = docElement.firstChildElement("DeviceDescription");
+            device->name = element.text();
 
-//            list = dom.elementsByTagName("IPv4Address");
-//            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(fromAddress.toString());
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(j,1,tableItem );
+            element = docElement.firstChildElement("IPv4Gateway");
+            device->gateway = element.text();
 
-            list = dom.elementsByTagName("IPv4Gateway");
-            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(element.text());
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(j,2, tableItem);
+            element = docElement.firstChildElement("CommandPort");
+            device->serverPort = element.text().toInt();
 
-//            list = dom.elementsByTagName("HttpPort");
-//            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(QString::number(fromPort));
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(j,3, tableItem);
+            element = docElement.firstChildElement("HttpPort");
+            device->port = element.text().toInt();
 
-            list = dom.elementsByTagName("CommandPort");
-            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(element.text());
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(j,4, tableItem);
+            element = docElement.firstChildElement("DeviceSN");
+            device->serial = element.text();
 
-            list = dom.elementsByTagName("DeviceSN");
-            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(element.text());
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(j,5, tableItem);
+//            allDataGrams.append(receiveDatagram);
 
-            list = dom.elementsByTagName("tns:XAddrs");
-            element = list.at(0).toElement();
-            tableItem = new QTableWidgetItem(element.text());
-            tableItem->setTextAlignment(Qt::AlignCenter);
-            ui->cameraInfo->setItem(j,6, tableItem);
+            addDiscoveredDevice(device);
 
-            allDataGrams.append(receiveDatagram);
         }
         else
         {
@@ -210,50 +179,58 @@ void MainWindow::Probe(QString ipArg, int portArg)
 void MainWindow::on_searchButton_clicked()
 {
    EnumerateLocalIps();
-    //clearing out camera table, try to find a better way
-    for(int i =0; i < 254; i++)
+ui->cameraInfo->setRowCount(0);
+    for(int i = 0; i < devices.count(); i++)
     {
-        for(int j = 0; j < 5 ; j++)
-        {
-            QTableWidgetItem *tablei = new QTableWidgetItem("");
-            ui->cameraInfo->setItem(i,j,tablei);
-        }
-        QTableWidgetItem *tablei = new QTableWidgetItem("");
-        ui->cameraInfo->setItem(i,5,tablei);
+        DiscoverdDevice * device = devices.at(i);
+        delete device;
     }
+    devices.clear();
+
+    QString startIp = "0.0.0.0";
+
+    NETDEV_SetDiscoveryCallBack(discover,this);
+    NETDEV_Discovery((CHAR*)startIp.toStdString().c_str(), (CHAR*)startIp.toStdString().c_str()); //<< uniview probe
 
     //start 2 probes
     for(int j=0; j<ipEntries.count(); j++) {
         if(ipEntries.at(j).ip().protocol() == QAbstractSocket::IPv4Protocol)
         {
-            Probe(ipEntries.at(j).ip().toString(), 3702);
+//            Probe(ipEntries.at(j).ip().toString(), 3702);
             Probe(ipEntries.at(j).ip().toString(), 37020);
         }
     }
 }
 
-//test to fill camera table
+void STDCALL discover(LPNETDEV_DISCOVERY_DEVINFO_S pstDevInfo, LPVOID lpUserData)
+{
+DiscoverdDevice *uniview = new DiscoverdDevice;
+MainWindow *pThis = (MainWindow*)lpUserData;
+
+
+    uniview->address = QHostAddress(pstDevInfo->szDevAddr);
+    uniview->port = uniview->serverPort = pstDevInfo->dwDevPort;
+    uniview->type = pstDevInfo->enDevType;
+    uniview->mac = pstDevInfo->szDevMac;
+    uniview->name = pstDevInfo->szDevName;
+    uniview->model = pstDevInfo->szDevModule;
+    uniview->serial = pstDevInfo->szDevSerailNum;
+    uniview->version = pstDevInfo->szDevVersion;
+    uniview->manuf = pstDevInfo->szManuFacturer;
+
+    qDebug() << uniview->address << endl << uniview->port << endl << uniview->type << endl << uniview->mac << endl << uniview->name << endl << uniview->model << endl << uniview->serial << endl << uniview->version << endl << uniview->manuf << endl;
+    pThis->addDiscoveredDevice(uniview);
+}
+
 void MainWindow::on_applyButton_clicked()
 {
-    for(int i =0; i < 254; i++)
-    {
-        for(int j = 0; j < 5 ; j++)
-        {
-            QTableWidgetItem *tablei = new QTableWidgetItem("test");
 
-            ui->cameraInfo->setItem(i,j,tablei);
-        }
-        QTableWidgetItem *tablei = new QTableWidgetItem("test");
-
-        ui->cameraInfo->setItem(i,5,tablei);
-    }EnumerateLocalIps();
 }
 
 void MainWindow::on_advancebtn_clicked()
 {
     Advanced *advance = new Advanced;
     advance->show();
-
 }
 
 bool MainWindow::isLocalIp(QHostAddress address)
@@ -278,4 +255,44 @@ DiscoverdDevice *MainWindow::getDiscoveredDevice(QHostAddress ip , int port)
         }
     }
     return 0;
+}
+
+void MainWindow::addDiscoveredDevice(DiscoverdDevice *device)
+{
+    if(!getDiscoveredDevice(device->address, device->port))
+    {
+        devices.push_back(device);
+
+        int j;
+        j = ui->cameraInfo->rowCount();
+        ui->cameraInfo->insertRow(j);
+        QTableWidgetItem  *tableItem = new QTableWidgetItem(device->name);
+        tableItem->setTextAlignment(Qt::AlignCenter);
+        ui->cameraInfo->setItem(j,0, tableItem);
+
+        tableItem = new QTableWidgetItem(device->address.toString());
+        tableItem->setTextAlignment(Qt::AlignCenter);
+        ui->cameraInfo->setItem(j,1,tableItem );
+
+
+        tableItem = new QTableWidgetItem(device->gateway);
+        tableItem->setTextAlignment(Qt::AlignCenter);
+        ui->cameraInfo->setItem(j,2, tableItem);
+
+
+        tableItem = new QTableWidgetItem(QString::number(device->port));
+        tableItem->setTextAlignment(Qt::AlignCenter);
+        ui->cameraInfo->setItem(j,3, tableItem);
+
+        tableItem = new QTableWidgetItem(QString::number(device->serverPort));
+        tableItem->setTextAlignment(Qt::AlignCenter);
+        ui->cameraInfo->setItem(j,4, tableItem);
+
+
+        tableItem = new QTableWidgetItem(device->serial);
+        tableItem->setTextAlignment(Qt::AlignCenter);
+        ui->cameraInfo->setItem(j,5, tableItem);
+
+
+    }
 }
