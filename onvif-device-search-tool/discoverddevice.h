@@ -11,9 +11,15 @@ public:
     int port;
     QHostAddress address;
     QString serial;
-    QString deviceDescription;
     QString ipv4;
     QString gateway;
+    int type;
+    QString mac;
+    QString name;
+    QString model;
+    QString version;
+    QString manuf;
+    int serverPort;
 };
 
 #endif // DISCOVERDDEVICE_H

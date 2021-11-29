@@ -6,10 +6,12 @@
 #include <QNetworkInterface>
 #include <QNetworkAddressEntry>
 #include "discoverddevice.h"
+#include "NetDEVSDK.h"
 
 namespace Ui {
 class MainWindow;
 }
+
 
 class MainWindow : public QMainWindow
 {
@@ -18,9 +20,12 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
+    DiscoverdDevice *getDiscoveredDevice(QHostAddress ip, int port);
+    void addDiscoveredDevice(DiscoverdDevice *device);
     void EnumerateLocalIps();
     void Probe(QString ipArg, int portArg);
+    QList<DiscoverdDevice*> devices;
+
 private slots:
     void on_searchButton_clicked();
     void on_applyButton_clicked();
@@ -29,8 +34,6 @@ private slots:
 private:
     QList<QNetworkAddressEntry> ipEntries;
     Ui::MainWindow *ui;
-    QList<DiscoverdDevice*> devices;
-    DiscoverdDevice *getDiscoveredDevice(QHostAddress ip, int port);
 };
 
 #endif // MAINWINDOW_H
